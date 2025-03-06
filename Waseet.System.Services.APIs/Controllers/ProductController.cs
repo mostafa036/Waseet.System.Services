@@ -26,7 +26,6 @@ namespace Waseet.System.Services.APIs.Controllers
         public async Task<ActionResult> CreateProduct([FromForm] ProductDto productDto, [FromForm] IFormFile image)
         {
 
-
             if (productDto == null || image == null)
                 return BadRequest("Invalid request data or missing image.");
 
@@ -55,7 +54,6 @@ namespace Waseet.System.Services.APIs.Controllers
             return CreatedAtAction(nameof(GetProductById), new { id = product.Id }, product);
         }
 
-
         [HttpDelete("DeleteProduct/{id}")]
         public async Task<ActionResult> DeleteProduct(int id)
         {
@@ -65,7 +63,6 @@ namespace Waseet.System.Services.APIs.Controllers
             await _productRepo.DeleteAsync(product.Id);
             return Ok(new { message = "Product deleted successfully" });
         }
-
 
         // Update a product
         [HttpPut("UpdateProduct/{id}")]
@@ -83,7 +80,6 @@ namespace Waseet.System.Services.APIs.Controllers
             return Ok(new { message = "Product updated successfully", product });
         }
 
-
         // Get a product by ID
         [HttpGet("Product/{id}")]
         public async Task<ActionResult<Product>> GetProductById(int id)
@@ -93,7 +89,6 @@ namespace Waseet.System.Services.APIs.Controllers
             return Ok(product);
         }
 
-
         // Get all products
         [HttpGet("Products")]
         public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
@@ -101,8 +96,6 @@ namespace Waseet.System.Services.APIs.Controllers
             var products = await _productRepo.GetAllAsync();
             return Ok(products);
         }
-
-
 
         [HttpPost("UploadProductImage/{productId}")]
         public async Task<ActionResult<string>> UploadProductImage(int productId, IFormFile file)
@@ -142,6 +135,5 @@ namespace Waseet.System.Services.APIs.Controllers
 
             return Ok(new { ImageURL = product.ImageURL });
         }
-
     }
 }

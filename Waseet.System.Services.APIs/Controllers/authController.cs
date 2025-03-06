@@ -46,23 +46,32 @@ namespace Waseet.System.Services.APIs.Controllers
         public async Task<ActionResult<UserDto>> Register(RegisterDto registerDto)
         {
             if (CheckEmailExists(registerDto.Email).Result.Value)
-                return BadRequest(new ApiValidationErrorResponse() { Errors = new[] { " this email aready eaxit" } });
+                return BadRequest(new ApiValidationErrorResponse() { Errors = new[] { "This email already exists" } });
 
-            var role = await _roleManager.FindByNameAsync(registerDto.role);
-
-            var roleResult = await _roleManager.CreateAsync(new IdentityRole(registerDto.role));
+            // Check if the role exists
+            var roleExists = await _roleManager.RoleExistsAsync(registerDto.role);
+            if (!roleExists)
+            {
+                var roleResult = await _roleManager.CreateAsync(new IdentityRole(registerDto.role));
+                if (!roleResult.Succeeded)
+                    return BadRequest(new ApiResponse(400, "Failed to create role"));
+            }
 
             var user = new User()
             {
                 DisplayName = registerDto.DisplayName,
                 Email = registerDto.Email,
-                PhoneNumber = registerDto.PhoneNumber,
                 UserName = registerDto.Email.Split('@')[0],
             };
 
             var result = await _userManager.CreateAsync(user, registerDto.Password);
 
-            if (!result.Succeeded) return BadRequest(new ApiResponse(400));
+            if (!result.Succeeded) return BadRequest(new ApiResponse(400, "User creation failed"));
+
+            // **Add the user to the specified role**
+            var roleAssignmentResult = await _userManager.AddToRoleAsync(user, registerDto.role);
+            if (!roleAssignmentResult.Succeeded)
+                return BadRequest(new ApiResponse(400, "Failed to assign role"));
 
             return Ok(new UserDto(registerDto.DisplayName, registerDto.Email, await _tokenServices.CreateToken(user, _userManager)));
         }
@@ -85,6 +94,12 @@ namespace Waseet.System.Services.APIs.Controllers
             return Ok(new UserDto(user.DisplayName, user.Email, await _tokenServices.CreateToken(user, _userManager)));
         }
 
-
+        [Authorize]
+        [HttpGet("Logout")]
+        public async Task<ActionResult> Logout()
+        {
+            await _signInManager.SignOutAsync();
+            return Ok();
+        }
     }
 }

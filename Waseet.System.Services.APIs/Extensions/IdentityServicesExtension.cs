@@ -20,6 +20,8 @@ namespace Waseet.System.Services.APIs.Extensions
                 options.Password.RequireNonAlphanumeric = true;
                 options.Password.RequiredLength = 6;
 
+                options.SignIn.RequireConfirmedPhoneNumber = false; // Ensure it's optional
+
                 // Lockout settings
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
                 options.Lockout.MaxFailedAccessAttempts = 5;
