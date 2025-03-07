@@ -1,5 +1,3 @@
-
-using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using ShopSphere.Services.API.Extensions;
 using Waseet.System.Services.APIs.Extensions;
@@ -63,6 +61,7 @@ namespace Waseet.System.Services.APIs
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+
             app.UseCors("AllowAll");
 
             app.UseRouting();
@@ -71,11 +70,9 @@ namespace Waseet.System.Services.APIs
 
             app.UseHttpsRedirection();
 
-
-            app.UseAuthentication();
+            app.UseAuthentication(); // Ensure this is before UseAuthorization()
 
             app.UseAuthorization();
-
 
             app.MapControllers();
 

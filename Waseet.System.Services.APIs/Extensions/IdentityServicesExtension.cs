@@ -47,7 +47,9 @@ namespace Waseet.System.Services.APIs.Extensions
                     ValidAudience = configuration["JwtSettings:Audience"],
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtSettings:Secret"]))
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtSettings:Secret"])),
+                    RequireExpirationTime = true, // Ensure tokens have an expiration
+                    ValidateActor = false
                 };
             });
 

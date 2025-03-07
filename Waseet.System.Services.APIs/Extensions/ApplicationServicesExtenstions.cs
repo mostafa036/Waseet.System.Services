@@ -13,6 +13,8 @@ namespace ShopSphere.Services.API.Extensions
         {
             services.AddScoped<ITokenServices, TokenServices>();
 
+            services.AddSingleton<IConfiguration>(configuration);
+
             services.AddScoped<IAIService, ImagePrediction>();
 
             //services.AddSingleton<IConfiguration>(provider => provider.GetRequiredService<IConfiguration>());

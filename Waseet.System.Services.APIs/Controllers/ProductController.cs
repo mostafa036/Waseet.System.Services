@@ -1,10 +1,13 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Waseet.System.Services.Application.Abstractions;
 using Waseet.System.Services.Application.Dtos;
+using Waseet.System.Services.Domain.Identity;
 using Waseet.System.Services.Domain.Models;
+using Waseet.System.Services.Persistence.Errors;
 
 namespace Waseet.System.Services.APIs.Controllers
 {
@@ -14,29 +17,44 @@ namespace Waseet.System.Services.APIs.Controllers
     {
         private readonly IBaseRepository<Product> _productRepo;
         private readonly IMapper _mapper;
+        private readonly UserManager<User> _userManager;
 
-        public ProductController(IBaseRepository<Product> productRepo , IMapper mapper)
+        public ProductController(IBaseRepository<Product> productRepo , IMapper mapper , UserManager<User> userManager )
         {
             _productRepo =  productRepo;
             _mapper = mapper;
+            _userManager = userManager;
         }
 
-        [Authorize]
+
+
+
+
+
+
+
+        [Authorize(Roles = "serviceprovider")]
         [HttpPost("AddProduct")]
-        public async Task<ActionResult> CreateProduct([FromForm] ProductDto productDto, [FromForm] IFormFile image)
+        public async Task<ActionResult> CreateProduct([FromForm] ProductDto productDto, IFormFile image)
         {
-
             if (productDto == null || image == null)
-                return BadRequest("Invalid request data or missing image.");
+                return BadRequest(new ApiResponse(400, "Invalid request data or missing image."));
 
-            // Generate unique image filename
-            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(image.FileName)}";
-            var filePath = Path.Combine("wwwroot/ProductImages", fileName);
-
-            // Save image to server
-            using (var stream = new FileStream(filePath, FileMode.Create))
+            var email = User.FindFirstValue(ClaimTypes.Email);
+            if (string.IsNullOrEmpty(email))
             {
-                await image.CopyToAsync(stream);
+                return Unauthorized(new ApiResponse(401));
+            }
+
+            var user = await _userManager.FindByEmailAsync(email);
+
+            if (user == null || !await _userManager.IsInRoleAsync(user, "serviceprovider"))
+                return Forbid(); // User is not a service provider
+
+            var fileName = await SaveImageAsync(image);
+            if (string.IsNullOrEmpty(fileName))
+            {
+                return StatusCode(500, new ApiResponse(500, "Error saving image."));
             }
 
             var product = new Product
@@ -46,13 +64,15 @@ namespace Waseet.System.Services.APIs.Controllers
                 Price = productDto.Price,
                 OldPrice = productDto.OldPrice,
                 CategoryId = productDto.CategoryId,
-                ImageURL = $"/ProductImages/{fileName}" // Save relative path
+                ImageURL = $"/ProductImages/{fileName}",
+                ServiceProviderEmail = email
             };
 
             await _productRepo.AddAsync(product);
 
             return CreatedAtAction(nameof(GetProductById), new { id = product.Id }, product);
         }
+
 
         [HttpDelete("DeleteProduct/{id}")]
         public async Task<ActionResult> DeleteProduct(int id)
@@ -81,12 +101,14 @@ namespace Waseet.System.Services.APIs.Controllers
         }
 
         // Get a product by ID
-        [HttpGet("Product/{id}")]
-        public async Task<ActionResult<Product>> GetProductById(int id)
+        [HttpGet("GetProductById/{id}")]
+        public async Task<ActionResult<ProductToReturnDto>> GetProductById(int id)
         {
             var product = await _productRepo.GetByIdAsync(id);
             if (product == null) return NotFound();
-            return Ok(product);
+
+            var result = _mapper.Map<ProductToReturnDto>(product);
+            return Ok(result);
         }
 
         // Get all products
@@ -135,5 +157,31 @@ namespace Waseet.System.Services.APIs.Controllers
 
             return Ok(new { ImageURL = product.ImageURL });
         }
+
+
+
+
+
+
+
+
+        /// <summary>
+        /// Saves an uploaded image and returns the filename.
+        /// </summary>
+        private async Task<string> SaveImageAsync(IFormFile image)
+        {
+            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(image.FileName)}";
+            var filePath = Path.Combine("wwwroot/ProductImages", fileName);
+
+            Directory.CreateDirectory(Path.GetDirectoryName(filePath)); // Ensure directory exists
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await image.CopyToAsync(stream);
+            }
+
+            return fileName;
+        }
     }
+
 }

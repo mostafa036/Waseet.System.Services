@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using System.Security.Claims;
+using Tensorflow.Contexts;
 using Waseet.System.Services.Application.Dtos;
 using Waseet.System.Services.Application.IServices;
 using Waseet.System.Services.Domain.Identity;
@@ -19,7 +21,7 @@ namespace Waseet.System.Services.APIs.Controllers
         private readonly ITokenServices _tokenServices;
         private readonly RoleManager<IdentityRole> _roleManager;
 
-        public authController(UserManager<User> userManager , SignInManager<User> signInManager ,
+        public authController(UserManager<User> userManager, SignInManager<User> signInManager,
                               ITokenServices tokenServices, RoleManager<IdentityRole> roleManager)
         {
             _userManager = userManager;
@@ -73,7 +75,11 @@ namespace Waseet.System.Services.APIs.Controllers
             if (!roleAssignmentResult.Succeeded)
                 return BadRequest(new ApiResponse(400, "Failed to assign role"));
 
-            return Ok(new UserDto(registerDto.DisplayName, registerDto.Email, await _tokenServices.CreateToken(user, _userManager)));
+            var roles = await _userManager.GetRolesAsync(user);
+            var role = roles.FirstOrDefault(); // Get the first role (assuming user has one role)
+
+
+            return Ok(new GetCurrentUserdto(registerDto.DisplayName, registerDto.Email, await _tokenServices.CreateToken(user, _userManager), role));
         }
 
         [HttpGet("CheckEmailExists")]
@@ -87,11 +93,18 @@ namespace Waseet.System.Services.APIs.Controllers
         [HttpGet("GetCurrentUser")]
         public async Task<ActionResult<UserDto>> GetCurrentUser()
         {
-            var Email = User.FindFirstValue(ClaimTypes.Email);
+            var email = User.FindFirstValue(ClaimTypes.Email);
 
-            var user = await _userManager.FindByEmailAsync(Email);
+            if (email == null) return Unauthorized(new ApiResponse(401));
 
-            return Ok(new UserDto(user.DisplayName, user.Email, await _tokenServices.CreateToken(user, _userManager)));
+            var user = await _userManager.FindByEmailAsync(email);
+
+            if (user == null) return Unauthorized(new ApiResponse(401));
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var role = roles.FirstOrDefault(); // Get the first role (assuming user has one role)
+
+            return Ok(new GetCurrentUserdto(user.DisplayName, user.Email, await _tokenServices.CreateToken(user, _userManager), role));
         }
 
         [Authorize]
@@ -101,5 +114,106 @@ namespace Waseet.System.Services.APIs.Controllers
             await _signInManager.SignOutAsync();
             return Ok();
         }
+
+
+        //[Authorize(Roles = "Admin")] // Only allow Admins to delete users
+        [HttpDelete("DeleteUser/{id}")]
+        public async Task<IActionResult> DeleteUser(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+
+            if (user == null) return NotFound(new ApiResponse(404, "User not found"));
+
+            var result = await _userManager.DeleteAsync(user);
+
+            if (!result.Succeeded) return BadRequest(new ApiResponse(400, "Failed to delete user"));
+
+            return Ok(new ApiResponse(200, "User deleted successfully"));
+        }
+
+        // [Authorize(Roles = "Admin")]
+        [HttpDelete("DeleteUserByEmail/{email}")]
+        public async Task<IActionResult> DeleteUserByEmail(string email)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+
+            if (user == null) return NotFound(new ApiResponse(404, "User not found"));
+
+            var result = await _userManager.DeleteAsync(user);
+
+            if (!result.Succeeded) return BadRequest(new ApiResponse(400, "Failed to delete user"));
+
+            return Ok(new ApiResponse(200, "User deleted successfully"));
+        }
+
+
+        //[HttpPost("RefreshToken")]
+        //public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
+        //{
+        //    if (request is null || string.IsNullOrEmpty(request.RefreshToken))
+        //        return BadRequest(new ApiResponse(400, "Invalid refresh token request"));
+
+        //    var user = await _userManager.Users
+        //        .FirstOrDefaultAsync(u => u.RefreshToken == request.RefreshToken);
+
+        //    if (user == null || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
+        //        return Unauthorized(new ApiResponse(401, "Invalid or expired refresh token"));
+
+        //    // Generate new access token
+        //    var newToken = await _tokenServices.CreateToken(user, _userManager);
+
+        //    // Optionally, generate a new refresh token and update the user
+        //    user.RefreshToken = _tokenServices.GenerateRefreshToken();
+        //    user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7); // Set new expiry
+
+        //    await _userManager.UpdateAsync(user);
+
+        //    return Ok(new AuthResponse
+        //    {
+        //        Token = newToken,
+        //        RefreshToken = user.RefreshToken
+        //    });
+        //}
+
+
+        //[Authorize]
+        //[HttpPost("UploadProfilePhoto")]
+        //public async Task<ActionResult> UploadProfilePhoto([FromForm] IFormFile image)
+        //{
+        //    if (image == null || image.Length == 0)
+        //        return BadRequest(new ApiResponse(400, "No image uploaded"));
+
+        //    var userEmail = User.FindFirstValue(ClaimTypes.Email);
+        //    var user = await _userManager.FindByEmailAsync(userEmail);
+        //    if (user == null) return Unauthorized(new ApiResponse(401, "User not found"));
+
+        //    var fileName = await SaveImageAsync(image);
+        //    var filePath = $"/ProfileImages/{fileName}";
+
+        //    // Save to ProfilePhotos Table
+        //    var profilePhoto = new ProfilePhotos
+        //    {
+        //        FileName = fileName,
+        //        FilePath = filePath,
+        //        PhotoType = image.ContentType,
+        //        FileSize = image.Length,
+        //        UserId = user.Id
+        //    };
+
+        //    _context.ProfilePhotos.Add(profilePhoto);
+        //    await _context.SaveChangesAsync();
+
+        //    // Optionally update User's main profile picture
+        //    user.ImageURL = filePath;
+        //    await _userManager.UpdateAsync(user);
+
+        //    return Ok(new ApiResponse(200, "Profile photo uploaded successfully", new { FileUrl = filePath }));
+        //}
+
+
+
+
+
+
     }
 }
