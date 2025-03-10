@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Waseet.System.Services.Persistence.Errors;
 
 namespace Waseet.System.Services.APIs.Middlewares
@@ -44,11 +45,13 @@ namespace Waseet.System.Services.APIs.Middlewares
 
             var options = new JsonSerializerOptions
             {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                ReferenceHandler = ReferenceHandler.IgnoreCycles // Add this line
             };
 
             var jsonResponse = JsonSerializer.Serialize(response, options);
             await context.Response.WriteAsync(jsonResponse);
+
         }
 
     }

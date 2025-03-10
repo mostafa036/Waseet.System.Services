@@ -10,16 +10,9 @@ namespace Waseet.System.Services.APIs.Helper
     {
         public MappingProfiles()
         {
-            //// Map Product -> ProductToReturnDto
-            //CreateMap<Product, ProductToReturnDto>()
-            //.ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category.CategoryName))
-            //.ForMember(dest => dest.rating, opt => opt.MapFrom(src => src.ProductReviews.Any()
-            //    ? src.ProductReviews.Average(r => r.Rating) : 0));
-
-            // Map User -> UserReturnDto
-            CreateMap<User, UserReturnDto>()
-                .ForMember(dest => dest.ServiceProviderName, opt => opt.MapFrom(src => src.UserName))
-                .ForMember(dest => dest.ServiceProviderImg, opt => opt.MapFrom(src => src.profilePhotoes.FilePath));
+            //CreateMap<User, UserReturnDto>()
+            //    .ForMember(dest => dest.ServiceProviderName, opt => opt.MapFrom(src => src.UserName))
+            //    .ForMember(dest => dest.ServiceProviderImg, opt => opt.MapFrom(src => src.profilePhotoes.FilePath));
 
             CreateMap<Category, CategoryDto>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
@@ -34,9 +27,17 @@ namespace Waseet.System.Services.APIs.Helper
                 .ForMember(dest => dest.OldPrice, opt => opt.MapFrom(src => src.OldPrice))
                 .ForMember(dest => dest.ServiceProviderEmail, opt => opt.MapFrom(src => src.ServiceProviderEmail))
                 .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category.CategoryName))
-                .ForMember(dest => dest.rating, opt => opt.MapFrom(src => src.ProductReviews.Any() ? src.ProductReviews.Average(r => r.Rating) : 0))
-                .ForMember(dest => dest.ImageURL, opt => opt.MapFrom<ProductPictureResolver>());
-                //.ForMember(dest => dest.ImageURL, opt => opt.NullSubstitute(string.Empty)); // Ensures a non-null default value
+                .ForMember(dest => dest.Rating, opt => opt.MapFrom(src => src.ProductReviews.Any() ? src.ProductReviews.Average(r => r.Rating) : 0))
+                .ForMember(dest => dest.ImageURL, opt => opt.MapFrom<ProductPictureResolver>()); // ✅ Ensure PascalCase
+
+
+            CreateMap<ProductReview, ProductReviewReturnDto>()
+           .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.CustomerEamil)) // Assuming email as fallback
+           .ForMember(dest => dest.CustomerImage, opt => opt.Ignore()); // Will set separately
+
+            CreateMap<User, ProductReviewReturnDto>()
+                .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.DisplayName))
+                .ForMember(dest => dest.CustomerImage, opt => opt.MapFrom(src => src.profilePhotoesPath));
 
         }
     }

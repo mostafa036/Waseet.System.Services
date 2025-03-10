@@ -2,6 +2,8 @@
 using Waseet.System.Services.Application.Abstractions;
 using Waseet.System.Services.Application.ImagePredictionServices;
 using Waseet.System.Services.Application.IServices;
+using Waseet.System.Services.Application.Resolving;
+using Waseet.System.Services.Domain.Models;
 using Waseet.System.Services.Infrastructure.Repositories;
 using Waseet.System.Services.Infrastructure.Services;
 
@@ -11,7 +13,13 @@ namespace ShopSphere.Services.API.Extensions
     {
         public static IServiceCollection AddApplicationServicse(this IServiceCollection services, IConfiguration configuration)
         {
+            services.AddScoped<ISpecificationRepository<Product>, SpecificationRepository<Product>>();
+
             services.AddScoped<ITokenServices, TokenServices>();
+
+            services.AddTransient<ProductPictureResolver>();
+
+            services.AddScoped<IImageService, ImageService>();
 
             services.AddSingleton<IConfiguration>(configuration);
 

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using ShopSphere.Services.API.Extensions;
+using System.Text.Json.Serialization;
 using Waseet.System.Services.APIs.Extensions;
 using Waseet.System.Services.APIs.Middlewares;
 using Waseet.System.Services.Application.Resolving;
@@ -14,7 +15,11 @@ namespace Waseet.System.Services.APIs
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
-            builder.Services.AddControllers();
+            builder.Services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
+                });
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.ConfigureDatabases(builder.Configuration);

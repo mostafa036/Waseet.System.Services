@@ -5,9 +5,12 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using System.Security.Claims;
 using Tensorflow.Contexts;
+using Tensorflow.Operations.Initializers;
+using Waseet.System.Services.Application.Abstractions;
 using Waseet.System.Services.Application.Dtos;
 using Waseet.System.Services.Application.IServices;
 using Waseet.System.Services.Domain.Identity;
+using Waseet.System.Services.Domain.Models;
 using Waseet.System.Services.Persistence.Errors;
 
 namespace Waseet.System.Services.APIs.Controllers
@@ -20,14 +23,16 @@ namespace Waseet.System.Services.APIs.Controllers
         private readonly SignInManager<User> _signInManager;
         private readonly ITokenServices _tokenServices;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IImageService _imageService;
 
         public authController(UserManager<User> userManager, SignInManager<User> signInManager,
-                              ITokenServices tokenServices, RoleManager<IdentityRole> roleManager)
+                              ITokenServices tokenServices, RoleManager<IdentityRole> roleManager, IImageService imageService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _tokenServices = tokenServices;
             _roleManager = roleManager;
+            _imageService = imageService;
         }
 
         [HttpPost("Login")]
@@ -176,44 +181,29 @@ namespace Waseet.System.Services.APIs.Controllers
         //}
 
 
-        //[Authorize]
-        //[HttpPost("UploadProfilePhoto")]
-        //public async Task<ActionResult> UploadProfilePhoto([FromForm] IFormFile image)
-        //{
-        //    if (image == null || image.Length == 0)
-        //        return BadRequest(new ApiResponse(400, "No image uploaded"));
+        [Authorize]
+        [HttpPost("UploadProfilePhoto")]
+        public async Task<ActionResult> UploadProfilePhoto([FromForm] IFormFile image)
+        {
+            if (image == null || image.Length == 0)
+                return BadRequest(new ApiResponse(400, "No image uploaded"));
 
-        //    var userEmail = User.FindFirstValue(ClaimTypes.Email);
-        //    var user = await _userManager.FindByEmailAsync(userEmail);
-        //    if (user == null) return Unauthorized(new ApiResponse(401, "User not found"));
+            var userEmail = User.FindFirstValue(ClaimTypes.Email);
+            var user = await _userManager.FindByEmailAsync(userEmail);
+            if (user == null)
+                return Unauthorized(new ApiResponse(401, "User not found"));
 
-        //    var fileName = await SaveImageAsync(image);
-        //    var filePath = $"/ProfileImages/{fileName}";
+            // Save image and update user profile
+            string imagePath = await _imageService.SaveImageAsync(image, "Users");
+            user.profilePhotoesPath = imagePath;  // ✅ Store the image path in the user profile
 
-        //    // Save to ProfilePhotos Table
-        //    var profilePhoto = new ProfilePhotos
-        //    {
-        //        FileName = fileName,
-        //        FilePath = filePath,
-        //        PhotoType = image.ContentType,
-        //        FileSize = image.Length,
-        //        UserId = user.Id
-        //    };
+            // Save changes to the database
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+                return StatusCode(500, new ApiResponse(500, "Failed to update profile photo"));
 
-        //    _context.ProfilePhotos.Add(profilePhoto);
-        //    await _context.SaveChangesAsync();
-
-        //    // Optionally update User's main profile picture
-        //    user.ImageURL = filePath;
-        //    await _userManager.UpdateAsync(user);
-
-        //    return Ok(new ApiResponse(200, "Profile photo uploaded successfully", new { FileUrl = filePath }));
-        //}
-
-
-
-
-
+            return Ok(new ApiResponse(200, "Profile photo uploaded successfully"));
+        }
 
     }
 }

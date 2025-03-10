@@ -5,6 +5,7 @@ using Waseet.System.Services.Application.Abstractions;
 using Waseet.System.Services.Application.Dtos;
 using Waseet.System.Services.Application.Resolving;
 using Waseet.System.Services.Domain.Models;
+using Waseet.System.Services.Persistence.Errors;
 
 namespace Waseet.System.Services.APIs.Controllers
 {
@@ -14,13 +15,14 @@ namespace Waseet.System.Services.APIs.Controllers
     {
         private readonly IBaseRepository<Category> _categoryRepo;
         private readonly IMapper _mapper;
+        private readonly IImageService _imageService;
 
-        public CategoryController(IBaseRepository<Category> CategoryRepo , IMapper mapper)
+        public CategoryController(IBaseRepository<Category> CategoryRepo , IMapper mapper , IImageService imageService)
         {
             _categoryRepo = CategoryRepo;
             _mapper = mapper;
+            _imageService = imageService;
         }
-
 
         [HttpGet("Categories")]
         public async Task<ActionResult<IEnumerable<CategoryDto>>> GetCategories()
@@ -54,11 +56,29 @@ namespace Waseet.System.Services.APIs.Controllers
         }
 
         [HttpPost("AddCategory")]
-        public async Task<ActionResult<Category>> AddCategory(Category category)
+        public async Task<ActionResult<Category>> AddCategory([FromForm] CategoryCreateDTO model)
         {
+            if (string.IsNullOrWhiteSpace(model.CategoryName))
+                return BadRequest(new ApiResponse(400, "Category name is required"));
+
+            if (model.ImageUrl == null || model.ImageUrl.Length == 0)
+                return BadRequest(new ApiResponse(400, "No image uploaded"));
+
+            string imagePath = await _imageService.SaveImageAsync(model.ImageUrl, "Category");
+
+            var category = new Category
+            {
+                CategoryName = model.CategoryName,
+                imagUrl = imagePath
+            };
+
             var result = await _categoryRepo.AddAsync(category);
-            return Ok(result);
+
+            var categoryDtos = _mapper.Map<CategoryDto>(result);
+
+            return CreatedAtAction(nameof(AddCategory), new { id = result.Id }, result);
         }
+
 
         [HttpPost("upload")]
         public async Task<IActionResult> UploadImage([FromForm] UploadImageDto model)

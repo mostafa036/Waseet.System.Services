@@ -7,6 +7,7 @@ using Waseet.System.Services.Application.Abstractions;
 using Waseet.System.Services.Application.Dtos;
 using Waseet.System.Services.Domain.Identity;
 using Waseet.System.Services.Domain.Models;
+using Waseet.System.Services.Infrastructure.SpecificationWithEntity;
 using Waseet.System.Services.Persistence.Errors;
 
 namespace Waseet.System.Services.APIs.Controllers
@@ -18,20 +19,15 @@ namespace Waseet.System.Services.APIs.Controllers
         private readonly IBaseRepository<Product> _productRepo;
         private readonly IMapper _mapper;
         private readonly UserManager<User> _userManager;
+        private readonly ISpecificationRepository<Product> _specrepo;
 
-        public ProductController(IBaseRepository<Product> productRepo , IMapper mapper , UserManager<User> userManager )
+        public ProductController(IBaseRepository<Product> productRepo , IMapper mapper , UserManager<User> userManager ,ISpecificationRepository<Product> specrepo)
         {
             _productRepo =  productRepo;
             _mapper = mapper;
             _userManager = userManager;
+            _specrepo = specrepo;
         }
-
-
-
-
-
-
-
 
         [Authorize(Roles = "serviceprovider")]
         [HttpPost("AddProduct")]
@@ -74,6 +70,7 @@ namespace Waseet.System.Services.APIs.Controllers
         }
 
 
+
         [HttpDelete("DeleteProduct/{id}")]
         public async Task<ActionResult> DeleteProduct(int id)
         {
@@ -83,6 +80,8 @@ namespace Waseet.System.Services.APIs.Controllers
             await _productRepo.DeleteAsync(product.Id);
             return Ok(new { message = "Product deleted successfully" });
         }
+
+
 
         // Update a product
         [HttpPut("UpdateProduct/{id}")]
@@ -100,16 +99,25 @@ namespace Waseet.System.Services.APIs.Controllers
             return Ok(new { message = "Product updated successfully", product });
         }
 
+
+
         // Get a product by ID
         [HttpGet("GetProductById/{id}")]
         public async Task<ActionResult<ProductToReturnDto>> GetProductById(int id)
         {
-            var product = await _productRepo.GetByIdAsync(id);
-            if (product == null) return NotFound();
 
-            var result = _mapper.Map<ProductToReturnDto>(product);
+            var spec = new ProductWithCategorySpec(id);
+
+            var data = await _specrepo.GetEntityWithSpecAsync(spec);
+
+            if (data == null) return NotFound(new ApiResponse(404));
+
+            var result = _mapper.Map<ProductToReturnDto>(data);
+
             return Ok(result);
         }
+
+
 
         // Get all products
         [HttpGet("Products")]
@@ -118,6 +126,8 @@ namespace Waseet.System.Services.APIs.Controllers
             var products = await _productRepo.GetAllAsync();
             return Ok(products);
         }
+
+
 
         [HttpPost("UploadProductImage/{productId}")]
         public async Task<ActionResult<string>> UploadProductImage(int productId, IFormFile file)
@@ -159,15 +169,11 @@ namespace Waseet.System.Services.APIs.Controllers
         }
 
 
-
-
-
-
-
-
         /// <summary>
         /// Saves an uploaded image and returns the filename.
         /// </summary>
+        
+
         private async Task<string> SaveImageAsync(IFormFile image)
         {
             var fileName = $"{Guid.NewGuid()}{Path.GetExtension(image.FileName)}";
@@ -183,5 +189,4 @@ namespace Waseet.System.Services.APIs.Controllers
             return fileName;
         }
     }
-
 }
