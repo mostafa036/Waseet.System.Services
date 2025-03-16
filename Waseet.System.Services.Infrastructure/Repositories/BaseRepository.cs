@@ -36,6 +36,11 @@ namespace Waseet.System.Services.Infrastructure.Repositories
         public async Task<IReadOnlyList<T>> GetAllAsync()
             => await _context.Set<T>().ToListAsync();
 
+        //public async Task<List<T>> GetAllByIdAsync(int id)
+        //{
+        //    return await _context.Set<T>().Where(entity => entity.Id == id).ToListAsync();
+        //}
+
         public async Task<T> GetByIdAsync(int id)
         {
             var result = await _context.Set<T>().Where(item => item.Id == id).FirstOrDefaultAsync();

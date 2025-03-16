@@ -9,7 +9,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using Waseet.System.Services.Application.IServices;
-using Waseet.System.Services.Domain.Identity;
+using Waseet.System.Services.Domain.Models.Identity;
 
 namespace Waseet.System.Services.Infrastructure.Services
 {

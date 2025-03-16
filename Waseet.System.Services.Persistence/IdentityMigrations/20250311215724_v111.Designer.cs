@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Waseet.System.Services.Persistence.Data;
 
@@ -11,9 +12,11 @@ using Waseet.System.Services.Persistence.Data;
 namespace Waseet.System.Services.Persistence.IdentityMigrations
 {
     [DbContext(typeof(UserIdentityContext))]
-    partial class UserIdentityContextModelSnapshot : ModelSnapshot
+    [Migration("20250311215724_v111")]
+    partial class v111
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -155,7 +158,51 @@ namespace Waseet.System.Services.Persistence.IdentityMigrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("Waseet.System.Services.Domain.Models.Identity.User", b =>
+            modelBuilder.Entity("Waseet.System.Services.Domain.Identity.Address", b =>
+                {
+                    b.Property<int>("AddressId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AddressId"));
+
+                    b.Property<string>("AddressType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IsPrimary")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PostalCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Street")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("AddressId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("Address");
+                });
+
+            modelBuilder.Entity("Waseet.System.Services.Domain.Identity.User", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
@@ -168,6 +215,9 @@ namespace Waseet.System.Services.Persistence.IdentityMigrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DateOfBirth")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("DisplayName")
@@ -214,13 +264,7 @@ namespace Waseet.System.Services.Persistence.IdentityMigrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
-                    b.Property<string>("bio")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("profession")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("profileImage")
+                    b.Property<string>("profilePhotoesPath")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -247,7 +291,7 @@ namespace Waseet.System.Services.Persistence.IdentityMigrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("Waseet.System.Services.Domain.Models.Identity.User", null)
+                    b.HasOne("Waseet.System.Services.Domain.Identity.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -256,7 +300,7 @@ namespace Waseet.System.Services.Persistence.IdentityMigrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("Waseet.System.Services.Domain.Models.Identity.User", null)
+                    b.HasOne("Waseet.System.Services.Domain.Identity.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -271,7 +315,7 @@ namespace Waseet.System.Services.Persistence.IdentityMigrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Waseet.System.Services.Domain.Models.Identity.User", null)
+                    b.HasOne("Waseet.System.Services.Domain.Identity.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -280,10 +324,27 @@ namespace Waseet.System.Services.Persistence.IdentityMigrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("Waseet.System.Services.Domain.Models.Identity.User", null)
+                    b.HasOne("Waseet.System.Services.Domain.Identity.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Waseet.System.Services.Domain.Identity.Address", b =>
+                {
+                    b.HasOne("Waseet.System.Services.Domain.Identity.User", "User")
+                        .WithOne("Address")
+                        .HasForeignKey("Waseet.System.Services.Domain.Identity.Address", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Waseet.System.Services.Domain.Identity.User", b =>
+                {
+                    b.Navigation("Address")
                         .IsRequired();
                 });
 #pragma warning restore 612, 618

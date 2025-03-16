@@ -4,7 +4,6 @@ using Waseet.System.Services.Domain.Models;
 
 namespace Waseet.System.Services.Persistence.Data.Configurations
 {
-
     public class ProductConfig : IEntityTypeConfiguration<Product>
     {
         public void Configure(EntityTypeBuilder<Product> Entity)
@@ -14,8 +13,8 @@ namespace Waseet.System.Services.Persistence.Data.Configurations
             Entity.HasKey(p => p.Id);
 
             Entity.Property(p => p.Price).HasColumnType("decimal(18,2)");
-            Entity.Property(p => p.OldPrice).HasColumnType("decimal(18,2)");
 
+            Entity.Property(p => p.OldPrice).HasColumnType("decimal(18,2)");
 
             Entity.Property(p=>p.Description).IsRequired();
 
@@ -24,7 +23,6 @@ namespace Waseet.System.Services.Persistence.Data.Configurations
             Entity.HasMany(p => p.ProductReviews).WithOne(p => p.Product).HasForeignKey(p => p.ProductId);
 
             Entity.Property(p => p.ServiceProviderEmail).IsRequired();
-
         }
     }
 }

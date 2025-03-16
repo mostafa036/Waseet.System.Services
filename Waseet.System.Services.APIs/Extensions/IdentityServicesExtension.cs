@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using Waseet.System.Services.Domain.Identity;
+using Waseet.System.Services.Domain.Models.Identity;
 using Waseet.System.Services.Persistence.Data;
 
 namespace Waseet.System.Services.APIs.Extensions
@@ -11,6 +11,7 @@ namespace Waseet.System.Services.APIs.Extensions
     {
         public static IServiceCollection AddIdentityServices(this IServiceCollection services , IConfiguration  configuration)
         {
+
             services.AddIdentity<User, IdentityRole>(options =>
             {
                 // Password settings
@@ -20,15 +21,13 @@ namespace Waseet.System.Services.APIs.Extensions
                 options.Password.RequireNonAlphanumeric = true;
                 options.Password.RequiredLength = 6;
 
-                options.SignIn.RequireConfirmedPhoneNumber = false; // Ensure it's optional
-
                 // Lockout settings
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
                 options.Lockout.MaxFailedAccessAttempts = 5;
                 options.Lockout.AllowedForNewUsers = true;
 
                 // User settings
-                options.User.RequireUniqueEmail = true; 
+                options.User.RequireUniqueEmail = true;
 
             }).AddEntityFrameworkStores<UserIdentityContext>().AddDefaultTokenProviders();
 
@@ -52,7 +51,6 @@ namespace Waseet.System.Services.APIs.Extensions
                     ValidateActor = false
                 };
             });
-
             return services;
         }
     }

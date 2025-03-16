@@ -17,7 +17,11 @@ namespace ShopSphere.Services.API.Extensions
 
             services.AddScoped<ITokenServices, TokenServices>();
 
+            services.AddScoped<IProductRepository, ProductRepository>();
+
             services.AddTransient<ProductPictureResolver>();
+
+            services.AddScoped<IProductReviewRepository, ProductReviewRepository>();
 
             services.AddScoped<IImageService, ImageService>();
 

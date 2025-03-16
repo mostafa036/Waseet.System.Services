@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Waseet.System.Services.Domain.Identity;
+using Waseet.System.Services.Domain.Models.Identity;
 
 namespace Waseet.System.Services.Persistence.Data.DataSeeding
 {

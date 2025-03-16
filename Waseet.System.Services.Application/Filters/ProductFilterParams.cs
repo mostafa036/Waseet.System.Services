@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Waseet.System.Services.Domain.Models;
 
 namespace Waseet.System.Services.Application.Filters
 {
     public class ProductFilterParams
     {
-
+        public int? CategoryId { get; set; }
+        public string? ServiceProviderEmail { get; set; }
 
 
         private const int MaxPageSize = 10;

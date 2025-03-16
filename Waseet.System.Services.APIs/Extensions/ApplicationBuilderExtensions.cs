@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Waseet.System.Services.Domain.Identity;
+using Waseet.System.Services.Domain.Models.Identity;
 using Waseet.System.Services.Persistence.Data;
 using Waseet.System.Services.Persistence.Data.DataSeeding;
 
@@ -16,16 +16,16 @@ namespace Waseet.System.Services.APIs.Extensions
 
             var logger = scopedServices.GetRequiredService<ILoggerFactory>().CreateLogger<Program>();
 
-            try
-            {
-                // Seed User data
-                var userManager = scopedServices.GetRequiredService<UserManager<User>>();
-                await UserIdentityDbContextSeed.SeedAsync(userManager);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "An error occurred during migration and data seeding.");
-            }
+            //try
+            //{
+            //    // Seed User data
+            //    var userManager = scopedServices.GetRequiredService<UserManager<User>>();
+            //    await UserIdentityDbContextSeed.SeedAsync(userManager);
+            //}
+            //catch (Exception ex)
+            //{
+            //    logger.LogError(ex, "An error occurred during migration and data seeding.");
+            //}
         }
 
 

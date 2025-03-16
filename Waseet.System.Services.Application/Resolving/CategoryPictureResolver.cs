@@ -17,8 +17,6 @@ namespace Waseet.System.Services.Application.Resolving
 
         public string Resolve(Category source, CategoryDto destination, string destMember, ResolutionContext context)
         {
-           
-
             return string.IsNullOrEmpty(source.imagUrl)
                 ? string.Empty
                 : $"{_configuration["BaseApiUrl"]}{source.imagUrl}";

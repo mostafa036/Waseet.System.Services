@@ -2,13 +2,18 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using OneOf.Types;
+using System.Data;
 using System.Security.Claims;
+using Waseet.System.Services.APIs.Helper;
 using Waseet.System.Services.Application.Abstractions;
 using Waseet.System.Services.Application.Dtos;
-using Waseet.System.Services.Domain.Identity;
+using Waseet.System.Services.Application.Filters;
 using Waseet.System.Services.Domain.Models;
+using Waseet.System.Services.Domain.Models.Identity;
 using Waseet.System.Services.Infrastructure.SpecificationWithEntity;
 using Waseet.System.Services.Persistence.Errors;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Waseet.System.Services.APIs.Controllers
 {
@@ -20,16 +25,21 @@ namespace Waseet.System.Services.APIs.Controllers
         private readonly IMapper _mapper;
         private readonly UserManager<User> _userManager;
         private readonly ISpecificationRepository<Product> _specrepo;
+        private readonly IConfiguration _configuration;
+        private readonly IProductRepository _productRepositoryMapping;
 
-        public ProductController(IBaseRepository<Product> productRepo , IMapper mapper , UserManager<User> userManager ,ISpecificationRepository<Product> specrepo)
+        public ProductController(IBaseRepository<Product> productRepo , IMapper mapper , UserManager<User> userManager ,
+                                 ISpecificationRepository<Product> specrepo , IConfiguration configuration  , IProductRepository productRepositoryMapping )
         {
             _productRepo =  productRepo;
             _mapper = mapper;
             _userManager = userManager;
             _specrepo = specrepo;
+            _configuration = configuration;
+            _productRepositoryMapping = productRepositoryMapping;
         }
 
-        [Authorize(Roles = "serviceprovider")]
+        [Authorize(Roles = "serviceProvider")]
         [HttpPost("AddProduct")]
         public async Task<ActionResult> CreateProduct([FromForm] ProductDto productDto, IFormFile image)
         {
@@ -44,10 +54,12 @@ namespace Waseet.System.Services.APIs.Controllers
 
             var user = await _userManager.FindByEmailAsync(email);
 
-            if (user == null || !await _userManager.IsInRoleAsync(user, "serviceprovider"))
+            if (user == null || !await _userManager.IsInRoleAsync(user, "serviceProvider"))
                 return Forbid(); // User is not a service provider
 
+
             var fileName = await SaveImageAsync(image);
+
             if (string.IsNullOrEmpty(fileName))
             {
                 return StatusCode(500, new ApiResponse(500, "Error saving image."));
@@ -58,17 +70,36 @@ namespace Waseet.System.Services.APIs.Controllers
                 Name = productDto.Name,
                 Description = productDto.Description,
                 Price = productDto.Price,
-                OldPrice = productDto.OldPrice,
-                CategoryId = productDto.CategoryId,
+                CategoryId = productDto.category,
                 ImageURL = $"/ProductImages/{fileName}",
                 ServiceProviderEmail = email
             };
 
             await _productRepo.AddAsync(product);
 
-            return CreatedAtAction(nameof(GetProductById), new { id = product.Id }, product);
-        }
+            string serviceProviderImg = string.IsNullOrEmpty(user.profileImage)
+                                ? string.Empty
+                                : $"{_configuration["BaseApiUrl"]}{user.profileImage}";
 
+
+            string imageresolve = string.IsNullOrEmpty(product.ImageURL)
+                     ? string.Empty
+                     : $"{_configuration["BaseApiUrl"]}{product.ImageURL}";
+
+            var response = new
+            {
+                Id = product.Id,
+                Name = productDto.Name,
+                Description = productDto.Description,
+                Price = productDto.Price,
+                category = productDto.category,
+                image = imageresolve,
+                serviceProviderImg = serviceProviderImg,
+                serviceProviderName = user.DisplayName
+            };
+
+            return Ok(response);
+        }
 
 
         [HttpDelete("DeleteProduct/{id}")]
@@ -82,23 +113,71 @@ namespace Waseet.System.Services.APIs.Controllers
         }
 
 
-
-        // Update a product
-        [HttpPut("UpdateProduct/{id}")]
-        public async Task<ActionResult> UpdateProduct(int id, [FromBody] ProductDto productDto)
+        [Authorize(Roles = "serviceProvider")]
+        [HttpPut("UpdateProduct")]
+        public async Task<ActionResult> UpdateProduct([FromForm] ProductDto productDto, IFormFile? image)
         {
-            var product = await _productRepo.GetByIdAsync(id);
-            if (product == null) return NotFound();
+            if (productDto == null)
+                return BadRequest(new ApiResponse(400, "Invalid request data."));
 
+            var email = User.FindFirstValue(ClaimTypes.Email);
+            if (string.IsNullOrEmpty(email))
+                return Unauthorized(new ApiResponse(401));
+
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null || !await _userManager.IsInRoleAsync(user, "serviceProvider"))
+                return Forbid(); // User is not a service provider
+
+            var product = await _productRepo.GetByIdAsync(productDto.id);
+            if (product == null)
+                return NotFound(new ApiResponse(404, "Product not found."));
+
+            // تحديث الصورة إذا تم إرسال صورة جديدة
+            if (image != null)
+            {
+                var fileName = await SaveImageAsync(image);
+                if (!string.IsNullOrEmpty(fileName))
+                {
+                    product.ImageURL = $"/ProductImages/{fileName}";
+                }
+                else
+                {
+                    return StatusCode(500, new ApiResponse(500, "Error saving image."));
+                }
+            }
+
+            // تحديث بيانات المنتج
             product.Name = productDto.Name;
             product.Description = productDto.Description;
             product.Price = productDto.Price;
-            product.CategoryId = productDto.CategoryId;
+            product.OldPrice = productDto.OldPrice;
+            product.CategoryId = productDto.category;
 
             await _productRepo.UpdateAsync(product);
-            return Ok(new { message = "Product updated successfully", product });
-        }
 
+            string serviceProviderImg = string.IsNullOrEmpty(user.profileImage)
+                ? string.Empty
+                : $"{_configuration["BaseApiUrl"]}{user.profileImage}";
+
+            string imageresolve = string.IsNullOrEmpty(product.ImageURL)
+                ? string.Empty
+                : $"{_configuration["BaseApiUrl"]}{product.ImageURL}";
+
+            var response = new
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                OldPrice = product.OldPrice,
+                category = product.CategoryId,
+                image = imageresolve,
+                serviceProviderImg = serviceProviderImg,
+                serviceProviderName = user.DisplayName
+            };
+
+            return Ok(response);
+        }
 
 
         // Get a product by ID
@@ -118,15 +197,23 @@ namespace Waseet.System.Services.APIs.Controllers
         }
 
 
-
-        // Get all products
-        [HttpGet("Products")]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
+        [HttpGet("ProductsCards")]
+        public async Task<ActionResult<Pagination<ProductCards>>> GetProducts([FromQuery] ProductFilterParams productFilter)
         {
-            var products = await _productRepo.GetAllAsync();
-            return Ok(products);
-        }
+            var spec = new ProductWithCategorySpec(productFilter);
+            var products = await _specrepo.GetAllWithSpecAsync(spec);
 
+            if (products == null || !products.Any())
+                return NotFound(new ApiResponse(404, "No products found."));
+
+            var mappedResult = await _productRepositoryMapping.GetProductCardsWithServicProvider(products.ToList());
+
+            var countSpec = new ProductsWithFiltersForCountSpecification(productFilter);
+
+            var count = await _specrepo.GetCountAsync(countSpec);
+
+            return Ok(new Pagination<ProductCards>(productFilter.PageIndex, productFilter.PageSize, count, mappedResult));
+        }
 
 
         [HttpPost("UploadProductImage/{productId}")]
@@ -169,10 +256,23 @@ namespace Waseet.System.Services.APIs.Controllers
         }
 
 
+        //[HttpGet("GetProductsByCategory/{categoryId}")]
+        //public async Task<ActionResult<IEnumerable<Product>>> GetProductsByCategory(int categoryId)
+        //{
+        //    var products = await _productRepo.get(p => p.CategoryId == categoryId);
+
+        //    if (products == null || !products.Any())
+        //    {
+        //        return NotFound(new ApiResponse(404, "No products found for this category."));
+        //    }
+
+        //    return Ok(products);
+        //}
+
         /// <summary>
         /// Saves an uploaded image and returns the filename.
         /// </summary>
-        
+
 
         private async Task<string> SaveImageAsync(IFormFile image)
         {

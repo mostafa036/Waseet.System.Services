@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Waseet.System.Services.Application.Dtos
 {
-    public record UserDto (string DisplayName , string Password , string Token);
+    public record UserDto (string DisplayName , string Email , string Token);
 
-    public record LoginDto([Required] [EmailAddress]string Email, [Required]string Password);
+    public record LoginDto([Required] string Email, [Required]string Password);
 }

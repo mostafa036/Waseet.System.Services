@@ -9,11 +9,12 @@ namespace Waseet.System.Services.Application.Dtos
 {
     public class ProductReviewReturnDto
     {
+        public int Id { get; set; }
         public string Comment { get; set; } = string.Empty;
         public int Rating { get; set; }
         public int ProductId { get; set; }
         public DateTime ReviewDate { get; set; }
-        public string CustomerName { get; set; } = string.Empty;
-        public string CustomerImage { get; set; } = string.Empty;
+        public string CustomerName { get; set; } = null!;
+        public string CustomerImage { get; set; } = null!;
     }
 }
