@@ -22,9 +22,10 @@ namespace Waseet.System.Services.APIs.Controllers
         private readonly IConfiguration _configuration;
         private readonly IProductReviewRepository _productReviewRepository;
 
-
-        public ReviewController(IBaseRepository<ProductReview> reviewRepo, UserManager<User> userManager , 
-                                IMapper mapper , IConfiguration configuration , IProductReviewRepository productReviewRepository)
+        public ReviewController(IBaseRepository<ProductReview> reviewRepo,
+                                UserManager<User> userManager , 
+                                IMapper mapper , IConfiguration configuration ,
+                                IProductReviewRepository productReviewRepository)
         {
             _reviewRepo = reviewRepo;
             _userManager = userManager;
@@ -33,57 +34,64 @@ namespace Waseet.System.Services.APIs.Controllers
             _productReviewRepository = productReviewRepository;
         }
 
-
-        [Authorize(Roles = "customer")]
+        [Authorize]
         [HttpPost("add")]
         public async Task<ActionResult<ProductReviewReturnDto>> AddReview(ProductReviewDto reviewDto)
         {
-
             var userEmail = User.FindFirstValue(ClaimTypes.Email);
 
             if (string.IsNullOrEmpty(userEmail))
                 return Unauthorized(new ApiResponse(401, "User must be logged in to add a review."));
 
-            var user = await _userManager.FindByEmailAsync(userEmail); 
+            var user = await _userManager.FindByEmailAsync(userEmail);
 
             if (user == null)
                 return Unauthorized(new ApiResponse(401, "User not found."));
-
+        
             var review = new ProductReview
             {
-                Comment = reviewDto.Comment,
-                Rating = reviewDto.Rating,
-                ReviewDate = DateTime.UtcNow,
-                ProductId = reviewDto.ProductId,
-                CustomerEamil = user.Email
+                Comment = reviewDto.comment,
+                Rating = reviewDto.rating,
+                ReviewDate = reviewDto.date,
+                ProductId = reviewDto.productId,
+                CustomerEamil = userEmail
             };
 
             await _reviewRepo.AddAsync(review);
 
             var reviewResponse = _mapper.Map<ProductReviewReturnDto>(review);
+            reviewResponse.name = user.DisplayName;
+            reviewResponse.userId = user.Id;
 
-            reviewResponse.CustomerName = user.DisplayName;
-
-            reviewResponse.CustomerImage = string.IsNullOrEmpty(user.profileImage)
+            reviewResponse.profileImage = string.IsNullOrEmpty(user.profileImage)
                  ? string.Empty
                  : $"{_configuration["BaseApiUrl"]}{user.profileImage}";
-
             return Ok(reviewResponse);
         }
 
 
-        [Authorize(Roles = "Admin,Customer")]
+        [Authorize]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> DeleteReview(int id)
         {
+            
+            var userEmail = User.FindFirstValue(ClaimTypes.Email);
+
+            if (string.IsNullOrEmpty(userEmail))
+                return Unauthorized(new ApiResponse(401, "User must be logged in to delete a review."));
+
+            var user = await _userManager.FindByEmailAsync(userEmail);
+
+            if (user == null)
+                return Unauthorized(new ApiResponse(401, "User not found."));
+
             var review = await _reviewRepo.GetByIdAsync(id);
 
             if (review == null)
                 return NotFound(new ApiResponse(404, "Review not found."));
 
-            var userEmail = User.FindFirstValue(ClaimTypes.Email);
-            if (review.CustomerEamil != userEmail)
-                return Unauthorized(new ApiResponse(401, "You are not authorized to delete this review."));
+            if(review.CustomerEamil != userEmail)
+                return NotFound(new ApiResponse(403, "You do not have permission to delete this review."));
 
             await _reviewRepo.DeleteAsync(review.Id);
 
@@ -110,12 +118,11 @@ namespace Waseet.System.Services.APIs.Controllers
             var review = await _reviewRepo.GetByIdAsync(id);
             if (review == null)
                 return NotFound(new ApiResponse(404, "Review not found."));
-            review.Comment = reviewDto.Comment;
-            review.Rating = reviewDto.Rating;
+            review.Comment = reviewDto.comment;
+            review.Rating = reviewDto.rating;
             await _reviewRepo.UpdateAsync(review);
             var reviewResponse = _mapper.Map<ProductReviewReturnDto>(review);
             return Ok(reviewResponse);
         }
-
     }
 }

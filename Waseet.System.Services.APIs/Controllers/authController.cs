@@ -5,7 +5,9 @@ using System.Security.Claims;
 using Waseet.System.Services.Application.Abstractions;
 using Waseet.System.Services.Application.Dtos;
 using Waseet.System.Services.Application.IServices;
+using Waseet.System.Services.Domain.Models;
 using Waseet.System.Services.Domain.Models.Identity;
+using Waseet.System.Services.Persistence.Data;
 using Waseet.System.Services.Persistence.Errors;
 
 namespace Waseet.System.Services.APIs.Controllers
@@ -20,10 +22,15 @@ namespace Waseet.System.Services.APIs.Controllers
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IImageService _imageService;
         private readonly IConfiguration _configuration;
+        private readonly WaseetContext _waseetContext;
+        private readonly IProductRepository _productRepository;
+        private readonly IBaseRepository<Product> _productrepo;
 
         public authController(UserManager<User> userManager, SignInManager<User> signInManager,
                               ITokenServices tokenServices, RoleManager<IdentityRole> roleManager,
-                              IImageService imageService , IConfiguration configuration)
+                              IImageService imageService , IConfiguration configuration , WaseetContext waseetContext ,
+                              IProductRepository productRepository , IBaseRepository<Product> productrepo
+                          )
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -31,6 +38,9 @@ namespace Waseet.System.Services.APIs.Controllers
             _roleManager = roleManager;
             _imageService = imageService;
             _configuration = configuration;
+            _waseetContext = waseetContext;
+            _productRepository = productRepository;
+            _productrepo = productrepo;
         }
 
         [HttpPost("Login")]
@@ -60,6 +70,7 @@ namespace Waseet.System.Services.APIs.Controllers
 
                 user = new
                 {
+                    id = user.Id,
                     token = await _tokenServices.CreateToken(user, _userManager),
                     displayName = user.DisplayName,
                     email = user.Email,
@@ -176,13 +187,28 @@ namespace Waseet.System.Services.APIs.Controllers
             return Ok(new ApiResponse(200, "User deleted successfully"));
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "admin")]
         [HttpDelete("DeleteUserByEmail/{email}")]
         public async Task<IActionResult> DeleteUserByEmail(string email)
         {
             var user = await _userManager.FindByEmailAsync(email);
 
             if (user == null) return NotFound(new ApiResponse(404, "User not found"));
+
+            
+            // Check if the user has the role "ServiceProvider"
+            var isServiceProvider = await _userManager.IsInRoleAsync(user, "serviceProvider");
+            
+            if (!isServiceProvider)
+            {
+                // Find and delete all products added by the service provider
+                var products = await _productRepository.GetProductsByServiceProviderEmail(email);
+
+                if (products.Any())
+                {
+                    _productrepo.DeleteRange(products);
+                }
+            }
 
             var result = await _userManager.DeleteAsync(user);
 
@@ -326,8 +352,5 @@ namespace Waseet.System.Services.APIs.Controllers
 
         //    return Ok(new ApiResponse(200, "Profile photo uploaded successfully"));
         //}
-
-
-
     }
 }

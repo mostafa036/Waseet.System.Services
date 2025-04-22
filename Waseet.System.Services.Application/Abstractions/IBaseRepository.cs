@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using Waseet.System.Services.Domain.Common;
+using Waseet.System.Services.Domain.Models;
 
 namespace Waseet.System.Services.Application.Abstractions
 {
@@ -16,6 +17,7 @@ namespace Waseet.System.Services.Application.Abstractions
         Task<bool> DeleteAsync(int id);
         Task<T> AddAsync(T entity);
         IQueryable<T> Include(Expression<Func<T, object>> include);
+        Task DeleteRange(IEnumerable<T> Entities);
         Task<T> GetFirstOrDefaultAsync(Expression<Func<T, bool>> predicate);
     }
 }

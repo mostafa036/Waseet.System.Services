@@ -8,5 +8,6 @@ namespace Waseet.System.Services.Application.Abstractions
     {
         Task<List<ProductCards>> GetProductCardsWithServicProvider(List<Product> Models);
         Task<List<ProductToReturnDto>> GetAllByIdAsync(int productId);
+        Task<List<Product>> GetProductsByServiceProviderEmail(string email);
     }
 }

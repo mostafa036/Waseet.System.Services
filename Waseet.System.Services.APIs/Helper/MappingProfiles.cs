@@ -25,20 +25,19 @@ namespace Waseet.System.Services.APIs.Helper
                 .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
                 .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Price))
                 .ForMember(dest => dest.OldPrice, opt => opt.MapFrom(src => src.OldPrice))
-                .ForMember(dest => dest.ServiceProviderEmail, opt => opt.MapFrom(src => src.ServiceProviderEmail))
+                .ForMember(dest => dest.ServiceProviderImage, opt => opt.Ignore())
+                .ForMember(dest => dest.ServiceProviderName, opt => opt.Ignore())
                 .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category.CategoryName))
                 .ForMember(dest => dest.Rating, opt => opt.MapFrom(src => src.ProductReviews.Any() ? src.ProductReviews.Average(r => r.Rating) : 0))
                 .ForMember(dest => dest.ImageURL, opt => opt.MapFrom<ProductPictureResolver>()); // ✅ Ensure PascalCase
 
 
             CreateMap<ProductReview, ProductReviewReturnDto>()
-                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
-                .ForMember(dest => dest.Comment, opt => opt.MapFrom(src => src.Comment))
-                .ForMember(dest => dest.Rating, opt => opt.MapFrom(src => src.Rating))
-                .ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => src.ProductId))
-                .ForMember(dest => dest.ReviewDate, opt => opt.MapFrom(src => src.ReviewDate))
-                .ForMember(dest => dest.CustomerName, opt => opt.Ignore()) // Assuming email as fallback
-                .ForMember(dest => dest.CustomerImage, opt => opt.Ignore()); // Will set separately
+                .ForMember(dest => dest.comment, opt => opt.MapFrom(src => src.Comment))
+                .ForMember(dest => dest.rating, opt => opt.MapFrom(src => src.Rating))
+                .ForMember(dest => dest.date, opt => opt.MapFrom(src => src.ReviewDate))
+                .ForMember(dest => dest.name, opt => opt.Ignore()) // Assuming email as fallback
+                .ForMember(dest => dest.profileImage, opt => opt.Ignore()); // Will set separately
 
 
             CreateMap<User, ProductReviewReturnUserData>()

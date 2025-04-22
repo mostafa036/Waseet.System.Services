@@ -2,18 +2,16 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using OneOf.Types;
-using System.Data;
 using System.Security.Claims;
 using Waseet.System.Services.APIs.Helper;
 using Waseet.System.Services.Application.Abstractions;
 using Waseet.System.Services.Application.Dtos;
 using Waseet.System.Services.Application.Filters;
+using Waseet.System.Services.Application.IServices;
 using Waseet.System.Services.Domain.Models;
 using Waseet.System.Services.Domain.Models.Identity;
 using Waseet.System.Services.Infrastructure.SpecificationWithEntity;
 using Waseet.System.Services.Persistence.Errors;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Waseet.System.Services.APIs.Controllers
 {
@@ -29,7 +27,8 @@ namespace Waseet.System.Services.APIs.Controllers
         private readonly IProductRepository _productRepositoryMapping;
 
         public ProductController(IBaseRepository<Product> productRepo , IMapper mapper , UserManager<User> userManager ,
-                                 ISpecificationRepository<Product> specrepo , IConfiguration configuration  , IProductRepository productRepositoryMapping )
+                                 ISpecificationRepository<Product> specrepo , IConfiguration configuration  , 
+                                 IProductRepository productRepositoryMapping )
         {
             _productRepo =  productRepo;
             _mapper = mapper;
@@ -101,6 +100,64 @@ namespace Waseet.System.Services.APIs.Controllers
             return Ok(response);
         }
 
+        //[Authorize(Roles = "serviceProvider")]
+        //[HttpPost("AddProduct")]
+        //public async Task<ActionResult> CreateProduct([FromForm] ProductDto productDto,IFormFile image,[FromServices] IPhotoService photoService)
+        //{
+        //    if (productDto == null || image == null)
+        //        return BadRequest(new ApiResponse(400, "Invalid request data or missing image."));
+
+        //    var email = User.FindFirstValue(ClaimTypes.Email);
+
+        //    if (string.IsNullOrEmpty(email))
+        //        return Unauthorized(new ApiResponse(401));
+
+        //    var user = await _userManager.FindByEmailAsync(email);
+
+        //    if (user == null || !await _userManager.IsInRoleAsync(user, "serviceProvider"))
+        //        return Forbid();
+
+        //    // ✅ Upload to Cloudinary
+        //    var uploadResult = await photoService.UploadImageAsync(image, "products");
+
+        //    if (uploadResult.Error != null)
+        //        return StatusCode(500, new ApiResponse(500, "Image upload failed."));
+
+        //    var product = new Product
+        //    {
+        //        Name = productDto.Name,
+        //        Description = productDto.Description,
+        //        Price = productDto.Price,
+        //        CategoryId = productDto.category,
+        //        ImageURL = uploadResult.SecureUrl.ToString(), // ✅ Cloudinary URL
+        //        ServiceProviderEmail = email
+        //    };
+
+        //    await _productRepo.AddAsync(product);
+
+        //    string serviceProviderImg = string.IsNullOrEmpty(user.profileImage)
+        //                            ? string.Empty
+        //                            : $"{_configuration["BaseApiUrl"]}{user.profileImage}";
+
+        //    var imageResolved = string.IsNullOrEmpty(product.ImageURL)
+        //                 ? string.Empty
+        //                 : product.ImageURL; // Already full Cloudinary URL
+
+        //    var response = new
+        //    {
+        //        Id = product.Id,
+        //        Name = productDto.Name,
+        //        Description = productDto.Description,
+        //        Price = productDto.Price,
+        //        category = productDto.category,
+        //        image = imageResolved,
+        //        serviceProviderImg = serviceProviderImg,
+        //        serviceProviderName = user.DisplayName
+        //    };
+
+        //    return Ok(response);
+        //}
+
 
         [HttpDelete("DeleteProduct/{id}")]
         public async Task<ActionResult> DeleteProduct(int id)
@@ -132,7 +189,7 @@ namespace Waseet.System.Services.APIs.Controllers
             if (product == null)
                 return NotFound(new ApiResponse(404, "Product not found."));
 
-            // تحديث الصورة إذا تم إرسال صورة جديدة
+            
             if (image != null)
             {
                 var fileName = await SaveImageAsync(image);
@@ -146,7 +203,6 @@ namespace Waseet.System.Services.APIs.Controllers
                 }
             }
 
-            // تحديث بيانات المنتج
             product.Name = productDto.Name;
             product.Description = productDto.Description;
             product.Price = productDto.Price;
@@ -180,7 +236,6 @@ namespace Waseet.System.Services.APIs.Controllers
         }
 
 
-        // Get a product by ID
         [HttpGet("GetProductById/{id}")]
         public async Task<ActionResult<ProductToReturnDto>> GetProductById(int id)
         {
@@ -189,9 +244,16 @@ namespace Waseet.System.Services.APIs.Controllers
 
             var data = await _specrepo.GetEntityWithSpecAsync(spec);
 
+            var user = await _userManager.FindByEmailAsync(data.ServiceProviderEmail);
+
             if (data == null) return NotFound(new ApiResponse(404));
 
             var result = _mapper.Map<ProductToReturnDto>(data);
+
+            result.ServiceProviderName = user.DisplayName;
+            result.ServiceProviderImage = string.IsNullOrEmpty(user.profileImage)
+                ? string.Empty
+                : $"{_configuration["BaseApiUrl"]}{user.profileImage}";
 
             return Ok(result);
         }
@@ -254,25 +316,6 @@ namespace Waseet.System.Services.APIs.Controllers
 
             return Ok(new { ImageURL = product.ImageURL });
         }
-
-
-        //[HttpGet("GetProductsByCategory/{categoryId}")]
-        //public async Task<ActionResult<IEnumerable<Product>>> GetProductsByCategory(int categoryId)
-        //{
-        //    var products = await _productRepo.get(p => p.CategoryId == categoryId);
-
-        //    if (products == null || !products.Any())
-        //    {
-        //        return NotFound(new ApiResponse(404, "No products found for this category."));
-        //    }
-
-        //    return Ok(products);
-        //}
-
-        /// <summary>
-        /// Saves an uploaded image and returns the filename.
-        /// </summary>
-
 
         private async Task<string> SaveImageAsync(IFormFile image)
         {

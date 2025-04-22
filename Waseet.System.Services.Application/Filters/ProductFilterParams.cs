@@ -9,8 +9,14 @@ namespace Waseet.System.Services.Application.Filters
 {
     public class ProductFilterParams
     {
+        public string? Price { get; set; }
+        public string? Sort { get; set; }
+        public string? Search { get; set; }
         public int? CategoryId { get; set; }
         public string? ServiceProviderEmail { get; set; }
+
+        public decimal? min { get; set; }  // Minimum price for filtering
+        public decimal? max { get; set; }  // Maximum price for filtering
 
 
         private const int MaxPageSize = 10;

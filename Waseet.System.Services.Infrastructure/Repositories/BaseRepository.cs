@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Waseet.System.Services.Application.Abstractions;
 using Waseet.System.Services.Domain.Common;
+using Waseet.System.Services.Domain.Models;
 using Waseet.System.Services.Persistence.Data;
 
 namespace Waseet.System.Services.Infrastructure.Repositories
@@ -31,6 +32,12 @@ namespace Waseet.System.Services.Infrastructure.Repositories
             _context.Set<T>().Remove(await GetByIdAsync(id));
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task DeleteRange(IEnumerable<T> Entities)
+        {
+            _context.Set<T>().RemoveRange(Entities);
+            await _context.SaveChangesAsync();
         }
 
         public async Task<IReadOnlyList<T>> GetAllAsync()

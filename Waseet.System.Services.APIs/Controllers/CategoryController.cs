@@ -24,6 +24,7 @@ namespace Waseet.System.Services.APIs.Controllers
             _imageService = imageService;
         }
 
+
         [HttpGet("Categories")]
         public async Task<ActionResult<IEnumerable<CategoryDto>>> GetCategories()
         {
@@ -34,12 +35,14 @@ namespace Waseet.System.Services.APIs.Controllers
             return Ok(categoryDtos);
         }
 
+
         [HttpDelete("DeleteCategory/{id}")]
         public async Task<ActionResult<bool>> DeleteCategory(int id)
         {
             var result = await _categoryRepo.DeleteAsync(id);
             return Ok(result);
         }
+
 
         [HttpGet("Category/{id}")]
         public async Task<ActionResult<Category>> GetCategory(int id)
@@ -48,12 +51,14 @@ namespace Waseet.System.Services.APIs.Controllers
             return Ok(category);
         }
 
+
         [HttpPut("UpdateCategory")]
         public async Task<ActionResult<Category>> UpdateCategory(Category category)
         {
             var result = await _categoryRepo.UpdateAsync(category);
             return Ok(result);
         }
+
 
         [HttpPost("AddCategory")]
         public async Task<ActionResult<Category>> AddCategory([FromForm] CategoryCreateDTO model)

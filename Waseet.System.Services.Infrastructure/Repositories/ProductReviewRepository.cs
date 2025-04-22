@@ -45,9 +45,9 @@ namespace Waseet.System.Services.Infrastructure.Repositories
                 var user = await _userManager.FindByEmailAsync(review.CustomerEamil);
 
                 var reviewDto = _mapper.Map<ProductReviewReturnDto>(review);
-
-                reviewDto.CustomerName = user?.DisplayName ?? "Unknown";
-                reviewDto.CustomerImage = string.IsNullOrEmpty(user?.profileImage)
+                reviewDto.userId = user.Id;
+                reviewDto.name = user?.DisplayName ?? "Unknown";
+                reviewDto.profileImage = string.IsNullOrEmpty(user?.profileImage)
                     ? string.Empty
                     : $"{_configuration["BaseApiUrl"]}{user.profileImage}";
 

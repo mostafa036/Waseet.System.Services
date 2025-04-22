@@ -9,7 +9,8 @@ namespace Waseet.System.Services.Application.Dtos
         public decimal Price { get; set; }
         public decimal OldPrice { get; set; }
         public string ImageURL { get; set; }
-        public string ServiceProviderEmail { get; set; }
+        public string ServiceProviderName { get; set; }
+        public string ServiceProviderImage { get; set; }
         public int Rating { get; set; }
         public string Category { get; set; }
     }

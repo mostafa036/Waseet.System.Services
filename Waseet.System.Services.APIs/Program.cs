@@ -1,9 +1,12 @@
+using CloudinaryDotNet;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using ShopSphere.Services.API.Extensions;
 using System.Text.Json.Serialization;
 using Waseet.System.Services.APIs.Extensions;
 using Waseet.System.Services.APIs.Middlewares;
 using Waseet.System.Services.Application.Resolving;
+using Waseet.System.Services.Infrastructure.Services;
 using Waseet.System.Services.Persistence.Errors;
 
 namespace Waseet.System.Services.APIs
@@ -26,6 +29,14 @@ namespace Waseet.System.Services.APIs
             builder.Services.AddApplicationServicse(builder.Configuration);
             builder.Services.AddIdentityServices(builder.Configuration);
             builder.Services.AddHttpClient();
+            builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("CloudinarySettings"));
+
+            builder.Services.AddSingleton(provider =>
+            {
+                var config = provider.GetRequiredService<IOptions<CloudinarySettings>>().Value;
+                var account = new Account(config.CloudName, config.ApiKey, config.ApiSecret);
+                return new Cloudinary(account);
+            });
 
             // Register AutoMapper
             builder.Services.AddAutoMapper(typeof(Program));

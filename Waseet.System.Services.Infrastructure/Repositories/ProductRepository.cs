@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -58,6 +59,14 @@ namespace Waseet.System.Services.Infrastructure.Repositories
                 productCards.Add(products);
             }
             return productCards;
+        }
+
+        public async Task<List<Product>> GetProductsByServiceProviderEmail(string email)
+        {
+            var products = await _context.products
+                          .Where(p => p.ServiceProviderEmail == email).ToListAsync();
+
+            return products;
         }
     }
 }

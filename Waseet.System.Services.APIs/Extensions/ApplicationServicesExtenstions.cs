@@ -29,6 +29,8 @@ namespace ShopSphere.Services.API.Extensions
 
             services.AddScoped<IAIService, ImagePrediction>();
 
+            services.AddScoped<IPhotoService, PhotoService>();
+
             //services.AddSingleton<IConfiguration>(provider => provider.GetRequiredService<IConfiguration>());
 
 
