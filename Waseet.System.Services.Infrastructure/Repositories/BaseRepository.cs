@@ -40,6 +40,8 @@ namespace Waseet.System.Services.Infrastructure.Repositories
             await _context.SaveChangesAsync();
         }
 
+
+
         public async Task<IReadOnlyList<T>> GetAllAsync()
             => await _context.Set<T>().ToListAsync();
 

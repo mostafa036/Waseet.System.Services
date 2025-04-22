@@ -3,6 +3,7 @@ using Waseet.System.Services.Application.Dtos;
 using Waseet.System.Services.Application.Resolving;
 using Waseet.System.Services.Domain.Models;
 using Waseet.System.Services.Domain.Models.Identity;
+using Waseet.System.Services.Domain.Models.OrderAggeration;
 
 namespace Waseet.System.Services.APIs.Helper
 {
@@ -39,6 +40,8 @@ namespace Waseet.System.Services.APIs.Helper
                 .ForMember(dest => dest.name, opt => opt.Ignore()) // Assuming email as fallback
                 .ForMember(dest => dest.profileImage, opt => opt.Ignore()); // Will set separately
 
+            CreateMap<CustomerBasketDto, CustomerBasket>();
+            CreateMap<BasketItemDto, BasketItem>();
 
             CreateMap<User, ProductReviewReturnUserData>()
                 .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.DisplayName))

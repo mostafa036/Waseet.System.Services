@@ -169,10 +169,10 @@ namespace Waseet.System.Services.APIs.Controllers
             return Ok(new { message = "Product deleted successfully" });
         }
 
-
+        // True
         [Authorize(Roles = "serviceProvider")]
         [HttpPut("UpdateProduct")]
-        public async Task<ActionResult> UpdateProduct([FromForm] ProductDto productDto, IFormFile? image)
+        public async Task<ActionResult> UpdateProduct([FromForm] UpdateProductDTO productDto, IFormFile? image)
         {
             if (productDto == null)
                 return BadRequest(new ApiResponse(400, "Invalid request data."));
@@ -188,7 +188,6 @@ namespace Waseet.System.Services.APIs.Controllers
             var product = await _productRepo.GetByIdAsync(productDto.id);
             if (product == null)
                 return NotFound(new ApiResponse(404, "Product not found."));
-
             
             if (image != null)
             {
@@ -226,15 +225,12 @@ namespace Waseet.System.Services.APIs.Controllers
                 Description = product.Description,
                 Price = product.Price,
                 OldPrice = product.OldPrice,
-                category = product.CategoryId,
                 image = imageresolve,
                 serviceProviderImg = serviceProviderImg,
                 serviceProviderName = user.DisplayName
             };
-
             return Ok(response);
         }
-
 
         [HttpGet("GetProductById/{id}")]
         public async Task<ActionResult<ProductToReturnDto>> GetProductById(int id)
@@ -258,10 +254,25 @@ namespace Waseet.System.Services.APIs.Controllers
             return Ok(result);
         }
 
-
         [HttpGet("ProductsCards")]
         public async Task<ActionResult<Pagination<ProductCards>>> GetProducts([FromQuery] ProductFilterParams productFilter)
         {
+            string? userEmail = null;
+            bool isServiceProvider = false;
+
+            // Check if the user is authenticated
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                userEmail = User.FindFirstValue(ClaimTypes.Email);
+                isServiceProvider = User.IsInRole("serviceProvider");
+
+                if (isServiceProvider)
+                {
+                    // Only apply the filter if the user is a service provider
+                    productFilter.ServiceProviderEmail = userEmail;
+                }
+            }
+
             var spec = new ProductWithCategorySpec(productFilter);
             var products = await _specrepo.GetAllWithSpecAsync(spec);
 
@@ -276,7 +287,6 @@ namespace Waseet.System.Services.APIs.Controllers
 
             return Ok(new Pagination<ProductCards>(productFilter.PageIndex, productFilter.PageSize, count, mappedResult));
         }
-
 
         [HttpPost("UploadProductImage/{productId}")]
         public async Task<ActionResult<string>> UploadProductImage(int productId, IFormFile file)

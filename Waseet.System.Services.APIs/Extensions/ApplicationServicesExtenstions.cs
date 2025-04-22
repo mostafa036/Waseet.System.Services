@@ -15,6 +15,8 @@ namespace ShopSphere.Services.API.Extensions
         {
             services.AddScoped<ISpecificationRepository<Product>, SpecificationRepository<Product>>();
 
+            services.AddScoped<IBasketRepository,BasketRepository>();
+
             services.AddScoped<ITokenServices, TokenServices>();
 
             services.AddScoped<IProductRepository, ProductRepository>();

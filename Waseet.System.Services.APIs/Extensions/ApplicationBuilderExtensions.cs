@@ -29,9 +29,5 @@ namespace Waseet.System.Services.APIs.Extensions
                 logger.LogError(ex, "An error occurred during migration and data seeding.");
             }
         }
-
-
-
-
     }
 }

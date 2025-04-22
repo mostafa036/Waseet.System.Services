@@ -21,7 +21,6 @@ namespace Waseet.System.Services.Infrastructure.SpecificationWithEntity
                   (!filterParams.max.HasValue || m.Price <= filterParams.max)
              ))
         {
-
         }
     }
 }

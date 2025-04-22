@@ -11,6 +11,7 @@ namespace Waseet.System.Services.Application.Abstractions
 {
     public interface IBaseRepository<T> where T : BaseEntity
     {
+   
         Task<IReadOnlyList<T>> GetAllAsync();
         Task<T> GetByIdAsync(int id);
         Task<T> UpdateAsync(T entity);

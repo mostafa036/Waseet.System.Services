@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Waseet.System.Services.Domain.Models;
+
+using System.Text.Json.Serialization;
 
 namespace Waseet.System.Services.Application.Filters
 {
@@ -13,6 +11,7 @@ namespace Waseet.System.Services.Application.Filters
         public string? Sort { get; set; }
         public string? Search { get; set; }
         public int? CategoryId { get; set; }
+        [JsonIgnore]
         public string? ServiceProviderEmail { get; set; }
 
         public decimal? min { get; set; }  // Minimum price for filtering
